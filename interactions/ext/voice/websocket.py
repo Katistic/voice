@@ -1,4 +1,4 @@
-from asyncio import Event
+from asyncio import Event, get_event_loop
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from aiohttp import WSMessage, WSMsgType
@@ -152,13 +152,15 @@ class VoiceWebSocketClient(WebSocketClient):
         await self._voice_connect_data[guild_id]["can_return"].wait()
 
     async def _voice_connect(self, guild_id: str) -> None:
+        _event_loop = get_event_loop()
+
         voice_client = VoiceConnectionWebSocketClient(
             guild_id=int(guild_id),
             data=self._voice_connect_data[guild_id],
             _http=self._http,
         )
         self._voice_connections[guild_id] = voice_client
-        return await voice_client._connect()
+        self._voice_connect_data[guild_id]["voice_client_task"] = _event_loop.create_task(voice_client._connect())
 
     async def _disconnect_vc(self, guild_id: str) -> None:
         """
